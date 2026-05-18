@@ -1,0 +1,206 @@
+# Install Bioconductor manager if necessary
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+# Bioconductor packages
+BiocManager::install(c(
+  "glmGamPoi",
+  "SingleCellExperiment",
+  "UCell"
+), dependencies = TRUE)
+
+# CRAN packages
+install.packages(c(
+  "Seurat",
+  "SeuratObject",
+  "dplyr",
+  "tidyr",
+  "ggplot2",
+  "patchwork",
+  "ggpubr",
+  "plotly",
+  "data.table",
+  "sqldf",
+  "spatstat",
+  "gplots",
+  "corrplot",
+  "stringr",
+  "VennDiagram",
+  "reshape2"
+))
+
+## Load libraries
+
+library(Seurat)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(patchwork)
+library(ggpubr)
+library(plotly)
+library(UCell)
+library(SingleCellExperiment)
+library(data.table)
+library(sqldf)
+library(spatstat)
+library(gplots)
+library(corrplot)
+library(stringr)
+library(VennDiagram)
+library(grid)
+library(reshape2)
+
+#define study path
+#cell_type<-"CD8"
+
+#ADD YOUR STUDY NAME HERE
+study_name<-"BRCL_Visium"
+
+#GIVE A PATH TO YOUR ANALYSIS FOLDER WHERE ALL THE FILES STAY
+study_path<-"D:/RDATA/visium/V1/"
+
+#MAKE A LIST OF SAMPLES THAT YOU WILL BE ANALYSING
+samples <-c("60_PN06","60_PN08","60_PN09","78_002","78_006","78_009","78_010")
+
+#ADD GROUPS IF ANY
+sample_group <-c("healthy", "healthy", "healthy","lesion","lesion","lesion","lesion")
+
+#CREATE A FOLDER WITHIN 'study_path' as 'R'. ALL ANALYSIS WILL BE STORED HERE
+save_path<-paste0(study_path,"R/")
+save_on<-1
+
+
+### LOAD .H5 FILES ASSOCIATED WITH THESE SAMPLES
+
+seuratSpatial <- list()
+counter<-1
+for (sample in samples){
+  sample_dir <- file.path(study_path, sample, "outs")
+  if (!file.exists(file.path(sample_dir, "filtered_feature_bc_matrix.h5"))) {
+    stop(paste("Arquivo não encontrado para:", sample))
+  }
+  seuratSpatial[[sample]]<-Load10X_Spatial(
+    sample_dir,
+    filename ="filtered_feature_bc_matrix.h5",
+    assay = "Spatial",
+    slice = sample,
+    filter.matrix = TRUE,
+    to.upper = FALSE
+  )
+  #THIS SETS UP META DATA 'orig.ident' AS sammple FROM samples
+  seuratSpatial[[sample]]$orig.ident <- sample
+  #THIS SETS UP META DATA 'group' AS current sample_group
+  seuratSpatial[[sample]]$group <- sample_group[[counter]]
+
+
+  counter<-counter+1
+}
+
+
+
+#save prelim stats here.
+pdf(file = paste0(save_path, "Total_BRCL_counts.pdf"))
+for(object in seuratSpatial){
+  plot1 <- VlnPlot(object, features = "nCount_Spatial", pt.size = 0.1) + NoLegend()
+  plot2 <- SpatialFeaturePlot(object, features = "nCount_Spatial") + theme(legend.position = "right")
+  plot3 <- SpatialFeaturePlot(object, features = "nFeature_Spatial") + theme(legend.position = "right")
+  print(wrap_plots(plot1, plot2, plot3))
+}
+dev.off()
+rm(plot1,plot2, plot3)
+gc()
+gc()
+
+
+#Normalise spatial counts here and merge datasets
+
+#60_PN09 has one spot with no UMIs and therefore
+#throws the following error
+seuratSpatial[["60_PN09"]] <- subset(seuratSpatial[["60_PN09"]], nCount_Spatial>0) 
+
+for(sample in samples){
+  print(seuratSpatial[[sample]])
+  seuratSpatial[[sample]] <- SCTransform(seuratSpatial[[sample]], assay = "Spatial",
+                                         verbose = FALSE,return.only.var.genes = FALSE,
+                                         vars.to.regress = c("nCount_Spatial", "nFeature_Spatial"))
+}
+
+
+##INTEGRATION
+
+features <- SelectIntegrationFeatures(object.list = seuratSpatial, nfeatures = 3000)
+seuratSpatial <- PrepSCTIntegration(object.list = seuratSpatial, anchor.features = features)
+
+
+immune.anchors <- FindIntegrationAnchors(object.list = seuratSpatial, normalization.method = "SCT", 
+                                         anchor.features = features)
+#rm(seuratSpatial)
+gc()
+obj_merged <- IntegrateData(anchorset = immune.anchors, normalization.method = "SCT")
+
+saveRDS(obj_merged, file = "D:/RDATA/visium/seurat_spatial_integrated.rds")
+
+obj_merged_copy <- readRDS(file = "D:/RDATA/visium/seurat_spatial_integrated.rds")
+
+
+DefaultAssay(obj_merged_copy) <- "integrated"
+
+## Run PCA
+obj_merged_final <- RunPCA(obj_merged_copy, verbose = FALSE)
+
+ElbowPlot(obj_merged_final, ndims = 40)
+
+## Run UMAP
+obj_merged_final <- RunUMAP(obj_merged_final, dims = 1:30)
+table(gsub(".*-1_", "", colnames(obj_merged_final@assays$integrated@data)))
+
+
+
+obj_merged_final <- FindNeighbors(obj_merged_final, reduction = "pca", dims = 1:30)
+obj_merged_final <- FindClusters(obj_merged_final, resolution = 0.5)
+
+table(Idents(obj_merged_final))
+table(obj_merged_final$group, Idents(obj_merged_final))
+
+
+#Cluster plot
+
+DimPlot(obj_merged_final, reduction = "pca")
+DimPlot(obj_merged_final, label = FALSE, pt.size = 0.8, label.size = 4.5, reduction = "umap")
+SpatialDimPlot(obj_merged_final, label = FALSE, pt.size = 0.8, label.size = 4.5)
+
+
+
+
+###### Creating a Senescence score UCell calculation
+
+DefaultAssay(obj_merged_final) <- "SCT"
+
+Senesc_genelist <- c("ATF5", "CDKN1A", "SESN2",
+                     "MAPK11","MAPK14","NFKB2","TP53")
+
+gene_set_ucel <- list(Senescence = Senesc_genelist)
+obj_merged_final <- AddModuleScore_UCell(obj_merged_final, missing_genes = c("skip"), features = gene_set_ucel2)
+
+
+
+VlnPlot(obj_merged_final,feature = "Senescence_UCell", group.by = "group", assay = "SCT", alpha =0, log = F) +
+  geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.5) +  stat_compare_means(method = "wilcox.test", label = "p.signif") +
+  scale_fill_manual(values = c("lightblue3", "#FFF69F")) + theme_bw() + 
+  theme(
+    panel.grid.major = element_blank(), # Remove o grid principal
+    panel.grid.minor = element_blank()  # Remove o grid secundário
+  )
+
+
+  SpatialFeaturePlot(
+    obj_merged_final, slot = "Spatial", features = "Senescence_UCell",
+      images = "X60_PN06",  min.cutoff = 0.1,, max.cutoff = 0.5, image.alpha = 0, 
+      pt.size.factor = 5
+    )  + 
+    SpatialFeaturePlot(
+      obj_merged_final, slot = "Spatial", features = "Senescence_UCell", images = "X78_002",
+        min.cutoff = 0.1,, max.cutoff = 0.5,
+        image.alpha = 0, pt.size.factor = 3
+                       )  
+
