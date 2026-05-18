@@ -40,15 +40,8 @@ Cutaneous leishmaniasis · Leishmania braziliensis · Cellular senescence · Spa
 | Figure number | File name           
 | ------------- |:-------------:|
 |1|hc_lcl_analysis.Rmd|
-|Supp. 1|lcl_analysis_senesc.Rmd|
-|2|lcl_analysis_senesc.Rmd|
-|Supp. 2|lcl_analysis_senesc.Rmd|
-|3 A-B|lcl_analysis_senesc.Rmd|
-|3 C-G|lcl_analysis_cytx.Rmd|
-|Supp. 3|lcl_analysis_cytx.Rmd|
-|4|lcl_analysis_cytx.Rmd|
-|Supp. 4|lcl_analysis_cytx.Rmd|
-
+|2-4|lcl_analysis.Rmd|
+|Supp. 1-4|lcl_analysis.Rmd|
 
 ## License
 
