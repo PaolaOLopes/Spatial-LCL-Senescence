@@ -91,8 +91,8 @@ for (sample in samples){
   seuratSpatial[[sample]]$orig.ident <- sample
   #THIS SETS UP META DATA 'group' AS current sample_group
   seuratSpatial[[sample]]$group <- sample_group[[counter]]
-
-
+  
+  
   counter<-counter+1
 }
 
@@ -180,27 +180,44 @@ Senesc_genelist <- c("ATF5", "CDKN1A", "SESN2",
                      "MAPK11","MAPK14","NFKB2","TP53")
 
 gene_set_ucel <- list(Senescence = Senesc_genelist)
-obj_merged_final <- AddModuleScore_UCell(obj_merged_final, missing_genes = c("skip"), features = gene_set_ucel2)
+obj_merged_final <- AddModuleScore_UCell(obj_merged_final, missing_genes = c("skip"), features = gene_set_ucel)
 
 
+metadata <- obj_merged_final@meta.data
 
-VlnPlot(obj_merged_final,feature = "Senescence_UCell", group.by = "group", assay = "SCT", alpha =0, log = F) +
-  geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.5) +  stat_compare_means(method = "wilcox.test", label = "p.signif") +
-  scale_fill_manual(values = c("lightblue3", "#FFF69F")) + theme_bw() + 
+  
+VlnPlot(
+  obj_merged_final,feature = "Senescence_UCell", group.by = "group", assay = "SCT", alpha =0, log = F
+  ) +
+  geom_boxplot(
+    width = 0.1, outlier.shape = NA, alpha = 0.5
+    ) +  
+  stat_compare_means(
+    method = "wilcox.test", label = "p.signif"
+    ) +
+  scale_fill_manual(
+    values = c("lightblue3", "#FFF69F")
+    ) + 
+  theme_bw() + 
   theme(
     panel.grid.major = element_blank(), # Remove o grid principal
     panel.grid.minor = element_blank()  # Remove o grid secundário
   )
 
+res <- wilcox.test(
+  Senescence_UCell ~ group,
+  data = metadata
+)
 
+
+SpatialFeaturePlot(
+  obj_merged_final, slot = "Spatial", features = "Senescence_UCell",
+  images = "X60_PN06",  min.cutoff = 0.1, max.cutoff = 0.5, image.alpha = 0, 
+  pt.size.factor = 5
+)  + 
   SpatialFeaturePlot(
-    obj_merged_final, slot = "Spatial", features = "Senescence_UCell",
-      images = "X60_PN06",  min.cutoff = 0.1,, max.cutoff = 0.5, image.alpha = 0, 
-      pt.size.factor = 5
-    )  + 
-    SpatialFeaturePlot(
-      obj_merged_final, slot = "Spatial", features = "Senescence_UCell", images = "X78_002",
-        min.cutoff = 0.1,, max.cutoff = 0.5,
-        image.alpha = 0, pt.size.factor = 3
-                       )  
+    obj_merged_final, slot = "Spatial", features = "Senescence_UCell", images = "X78_002",
+    min.cutoff = 0.1,, max.cutoff = 0.5,
+    image.alpha = 0, pt.size.factor = 3
+  ) 
 
