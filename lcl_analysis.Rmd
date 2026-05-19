@@ -15,7 +15,7 @@ install.packages("reshape")
 install.packages("cetcolor")
 install.packages("UCell")
 install.packages("clusterProfiler")
-install.packages("EnhancedVolcano")
+BiocManager::install("UCell")
 install.packages("enrichplot")
 
 ##### Load Required Libraries
@@ -41,7 +41,7 @@ library(enrichplot)
 ## Load Integrated Seurat Object
 
 BRCL_skin_merged <- readRDS(
-  file = "H:/R_analysis/Visium_BRCL/R/lesion_BRCL_skin_merged.Rds"
+  file ="D:/RDATA/lesion_BRCL_skin_merged.Rds"
 )
 
 
@@ -70,8 +70,8 @@ DimPlot(
 #Data Import
 
 cell2location_abundances <- read.csv(
-  "H:/R_analysis/Visium_BRCL/R/q05_cell_abundance_w_sf.csv" 
- )
+  "D:/RDATA/lesiononly_q05_cell_abundance_w_sf.csv"
+)
 
 ## Verify Spot ID Correspondence Between Metadata and Deconvolution Matrix
 
@@ -92,8 +92,8 @@ length(
 ## Update Cell2location Abundance Matrix
 
 cell2location_abundances <- read.csv(
-  "H:/R_analysis/Visium_BRCL/R/lesiononly_q05_cell_abundance_w_sf_barcoded.csv"
- )
+  "D:/RDATA/lesiononly_q05_cell_abundance_w_sf_barcoded.csv"
+)
 
 ## Metadata Formatting and Integration
 
@@ -117,7 +117,7 @@ BRCL_skin_merged <- AddMetaData(
 ## Cell Type Color Palette Definition
 
 my_colors1 <- c(
-  # Dendritic cells – azul
+  # Dendritic cells 
   "DC1" = "#33A1C9",
   "DC2" = "#33A1C9",
   "MigDC" = "#33A1C9",
@@ -125,39 +125,39 @@ my_colors1 <- c(
   "moDC2" = "#33A1C9",
   "moDC3" = "#33A1C9",
   
-  # Keratinocytes – amarelos
+  # Keratinocytes
   "DifferentiatedKC" = "#FEE08B",
   "DifferentiatedKC." = "#FEE08B",
   "ProliferatingKC" = "#FEE08B",
   "UndifferentiatedKC." = "#FEE08B",
   
-  # Fibroblasts – verdes terrosos
+  # Fibroblasts 
   "F1" = "#B2FF8A",
   "F2" = "#B2FF8A",
   "F3" = "#B2FF8A",
   
-  # ILCs – tons quentes de rosa/roxo
+  # ILCs 
   "ILC13" = "#F6B8A0",
   "ILC1NK" = "#F6B8A0",
   "ILC2" = "#F6B8A0",
   
-  # Langerhans cells – rosas/quentes
+  # Langerhans cells
   "LC1" = "#E78AC3",
   "LC2" = "#E78AC3",
   "LC3" = "#E78AC3",
   "LC4" = "#E78AC3",
   
-  # Lymphatic endothelial – verde limão/aqua
+  # Lymphatic endothelial 
   "LE1" = "#8C6D45",
   "LE2" = "#8C6D45",
   
-  # Macrophages e Monocytes – tons terrosos/marrons
+  # Macrophages e Monocytes 
   "Macro1" = "#E08214",
   "Macro2" = "#E08214",
   "Infmono" = "#E08214",
   "Mono" = "#E08214",
   
-  # Outras células imunes – alto contraste
+  # Other immune cells
   "Mastcell" = "#A6611A",
   "NK" = "#1B7837",
   "Plasma" = "#E6EF05",
@@ -165,18 +165,18 @@ my_colors1 <- c(
   "Th" = "#2bb218",
   "Treg" = "#9f18b2",
   
-  # Células estruturais – tons neutros ou pastéis
+  # Structal cells
   "Melanocyte" = "#000000",
   "Pericyte1noninflamm" = "#BABABA",
   "Pericyte2inflamm" = "#BABABA",
   "Schwann1" = "#FC9272",
   "Schwann2" = "#FC9272",
   
-  # Vascular endothelial – vermelhos ricos
+  # Vascular endothelial
   "VE1" = "#18b29f",
   "VE2" = "#18b29f",
   "VE3" = "#18b29f"
-  )
+)
 
 
 ## Function to Retrieve Top N Cell Types Per Spot
@@ -239,11 +239,11 @@ print(head(spatial_coords))
 
 top3_abundances <- get_top_n_celltypes(
   metadata[, cell_types], n = 3
-  )
+)
 
 plot_data_top3 <- cbind(
   spatial_coords, top3_abundances
-  )
+)
 
 plot_data_top3$sample <- BRCL_skin_merged$orig.ident
 
@@ -335,16 +335,16 @@ SpatialFeaturePlot(
 # x is the numeric vector containing Senescence_UCell values
 x <- BRCL_skin_merged$Senescence_UCell
 
-mclust_fit_1to5 <- Mclust(x, G = 1:5)
+mclust_fit_1to4 <- Mclust(x, G = 1:4)
 
-summary(mclust_fit_1to5)
+summary(mclust_fit_1to4)
 
-plot(mclust_fit_1to5, what = "density")
+plot(mclust_fit_1to4, what = "density")
 
 ## Extract Gaussian Mixture Model Parameters
 
-params <- mclust_fit_1to5$parameters
-G <- mclust_fit_1to5$G
+params <- mclust_fit_1to4$parameters
+G <- mclust_fit_1to4$G
 
 ## Generate Smooth Density Curves
 
@@ -424,18 +424,18 @@ ggplot(df_long, aes(x, value, color = variable, linetype = variable)) +
 
 ## Add Gaussian Mixture Classification to Metadata
 
-mclust_fit_1to5$classification
+mclust_fit_1to4$classification
 
-BRCL_skin_merged$Mclust5Clusters <- factor(
-  mclust_fit_1to5$classification
+BRCL_skin_merged$Mclust4Clusters <- factor(
+  mclust_fit_1to4$classification
 )
 
-mclust_fit_1to5$parameters$mean
+mclust_fit_1to4$parameters$mean
 
 ## Classification of Senescent and Non-Senescent Spots
 
 BRCL_skin_merged$SenescenceStatus <- ifelse(
-  BRCL_skin_merged$Mclust5Clusters == 1,
+  BRCL_skin_merged$Mclust4Clusters == 1,
   "Non-senescent",
   "Senescent"
 )
@@ -460,9 +460,10 @@ DimPlot(
 
 ## Generate Top 3 Cell Type Abundance Matrix of senescent spots
 
+BRCL_skin_merged <- UpdateSeuratObject(BRCL_skin_merged)
 
-obj_sen_spots <- WhichCells(BRCL_skin_merged, expression = SenescenceStatus == "Senescent" )
-obj_sen_spots <- subset(BRCL_skin_merged, cells = obj_sen_spots)
+sen_spots <- WhichCells(BRCL_skin_merged, expression = SenescenceStatus == "Senescent" )
+obj_sen_spots <- subset(BRCL_skin_merged, cells = sen_spots)
 
 
 plot_data_top3_filter <- plot_data_top3 %>%
@@ -502,136 +503,136 @@ ggplot() +
 
 cols_to_merge_macro <- c( 
   "Mono", "Macro1", "Macro2",  "Infmono"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     monocytes_macrophages = rowSums(across(all_of(cols_to_merge_macro)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_macro)
-    )
+  )
 
 
 cols_to_merge_dc <- c(
   "moDC3", "moDC2", "moDC1",  "MigDC",  "DC2", "DC1" 
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     DC = rowSums(across(all_of(cols_to_merge_dc)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_dc)
-    )
+  )
 
 cols_to_merge_lc <- c(
   "LC1" ,"LC2", "LC3","LC4"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     LC = rowSums(across(all_of(cols_to_merge_lc)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_lc)
-    )
+  )
 
 cols_to_merge_ilc <- c(
   "ILC13" ,"ILC1NK", "ILC2"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     ILC = rowSums(across(all_of(cols_to_merge_ilc)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_ilc)
-    )
+  )
 
 #Grouping non-immune cell populations
 
 cols_to_merge_ve <- c(
   "VE1",  "VE2" , "VE3" 
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     VE = rowSums(across(all_of(cols_to_merge_ve)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_ve)
-    )
+  )
 
 
 cols_to_merge_kc <- c(
   "UndifferentiatedKC.", "DifferentiatedKC.",   "DifferentiatedKC" ,   "ProliferatingKC"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     KC = rowSums(across(all_of(cols_to_merge_kc)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_kc)
-    )
+  )
 
 cols_to_merge_sch <- c(
   "Schwann2", "Schwann1"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     Schwann = rowSums(across(all_of(cols_to_merge_sch)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_sch)
-    )
+  )
 
 cols_to_merge_peri <- c(
   "Pericyte2inflamm", "Pericyte1noninflamm"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     Pericyte = rowSums(across(all_of(cols_to_merge_peri)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_peri)
-    )
+  )
 
 cols_to_merge_le <- c( 
   "LE2"  ,  "LE1"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     LE = rowSums(across(all_of(cols_to_merge_le)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_le)
-    )
+  )
 
 cols_to_merge_fibs <- c(
   "F1" ,   "F2"  , "F3"
-  )
+)
 
 metadata <- metadata %>%
   mutate(
     Fibro = rowSums(across(all_of(cols_to_merge_fibs)), na.rm = TRUE)
-    ) %>%
+  ) %>%
   select(
     -all_of(cols_to_merge_fibs)
-    )
+  )
 
 
 immune_cells <- c(  
   "Mastcell"  ,  "NK" , "Plasma"  , "Tc"  ,"Th"  , "Treg","monocytes_macrophages" , "DC" , "LC", "ILC"
-  )
+)
 
 non_immune_cells <- c(
   "Melanocyte" , "VE","KC","Schwann" , "Pericyte","LE", "Fibro"  
-  )
+)
 
 
 SenescenceStatus <-  metadata[metadata$SenescenceStatus == "Senescent", ]
@@ -831,7 +832,7 @@ BRCL_sen_all_DEG <- FindMarkers(
   group.by = "SenescenceStatus",
   assay = "SCT",
   test.use = "wilcox"
- )
+)
 
 
 ## Classification of Differentially Expressed Genes
@@ -868,6 +869,14 @@ all_downregulated_BRCL_sen_all_DEG$genes <- rownames(
   all_downregulated_BRCL_sen_all_DEG
 )
 
+top50_up_sen <- head(
+  all_upregulated_BRCL_sen_all_DEG$genes, 50
+)
+
+top_up_sen <- all_upregulated_BRCL_sen_all_DEG$avg_log2FC
+names(top_up_sen) <- rownames(all_upregulated_BRCL_sen_all_DEG)
+top_up_sen <- sort(top_up_sen, decreasing = TRUE)
+head_sen <- head(names(top_up_sen),30)
 
 ## Volcano Plot Visualization of Differentially Expressed Genes
 
@@ -900,7 +909,7 @@ EnhancedVolcano(
 
 ## Gene Set Enrichment Analysis Using SenMayo Signature
 
-senmayo <- read.csv("C:/Users/bigon/Downloads/SenMayo_TERM2GENE (1).xlsx")
+senmayo <- read.csv("D:/RDATA/senmayo.csv")
 
 geneList <- BRCL_sen_all_DEG$avg_log2FC
 
@@ -961,6 +970,7 @@ gseaplot2(
 
 # Gene Set Enrichment Analysis Using SASP Signature
 
+sasp_genes <- read.csv("D:/RDATA/SASP_genes.csv")
 
 geneList <-  BRCL_sen_all_DEG$avg_log2FC
 names(geneList) <- rownames(BRCL_sen_all_DEG)
@@ -1004,9 +1014,8 @@ gseaplot2(gsea_sasp,geneSetID = gs_id, title = title_txt, pvalue_table = FALSE,
 
 
 # Inflammation gene list import
-inflamma_genelist <- read.csv("H:/R_analysis/Visium_BRCL/Inflammation.csv")
-inflamma_genes <- inflamma_genelist[[2]]
-vetor_inflamma_gelist <- inflamma_genelist[,2]
+inflamma_genelist <- read.csv("D:/RDATA/Inflammation.csv")
+vetor_inflamma_gelist <- inflamma_genelist[,1]
 
 # Subsetting differentially expressed genes in senescent spots
 up_inflamm_sen <- all_upregulated_BRCL_sen_all_DEG[all_upregulated_BRCL_sen_all_DEG$genes %in% vetor_inflamma_gelist,]
@@ -1019,8 +1028,7 @@ all_inflamm_sen <- rbind(up_inflamm_sen, down_inflamm_sen)
 ## Chemokine-related gene set analysis (DotPlot preparation)
 
 
-chemok_genelist <- read.csv("H:/R_analysis/Visium_BRCL/Chemokine.csv")
-chemok_genes <- chemok_genelist[[1]]
+chemok_genelist <- read.csv("D:/RDATA/Chemokine.csv")
 vetor_chemok_genelist <- chemok_genelist[,1]
 
 up_chemok_sen <- all_upregulated_BRCL_sen_all_DEG[all_upregulated_BRCL_sen_all_DEG$genes %in% vetor_chemok_genelist,]
@@ -1165,6 +1173,7 @@ SpatialDimPlot(
   )
 
 
+
 ## Senescence score comparison between cytotoxic groups
 
 metadata <- BRCL_skin_merged@meta.data
@@ -1182,8 +1191,12 @@ ggplot(metadata, aes(x = groupUCell2, y = Senescence_UCell, fill = groupUCell2))
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank()
   )
-  )
+)
 
+res <- wilcox.test(
+  Senescence_UCell ~ groupUCell2,
+  data = metadata
+)
 
 #########
 ## Cytotoxicity stratification within senescent and non-senescent spots
@@ -1194,15 +1207,15 @@ BRCL_skin_copy <- BRCL_skin_merged
 q75 <- quantile(BRCL_skin_copy$Cytotoxicity_UCell, 0.75)
 
 BRCL_skin_copy$Sen_spots_cytx_class <- ifelse(
-  BRCL_skin_copy$Mclust5Clusters %in% c(2, 3) &
+  BRCL_skin_copy$Mclust4Clusters %in% c(2, 3) &
     BRCL_skin_copy$Cytotoxicity_UCell >= q75,
   "Senescents & Cytotoxic",
   ifelse(
-    BRCL_skin_copy$Mclust5Clusters %in% c(2, 3) &
+    BRCL_skin_copy$Mclust4Clusters %in% c(2, 3) &
       BRCL_skin_copy$Cytotoxicity_UCell < q75,
     "Senescents & Non-Cytotoxic",
     ifelse(
-      BRCL_skin_copy$Mclust5Clusters == 1 &
+      BRCL_skin_copy$Mclust4Clusters == 1 &
         BRCL_skin_copy$Cytotoxicity_UCell >= q75,
       "Non-Senescents & Cytotoxic",
       "Non-Senescents & Non-Cytotoxic"
@@ -1257,7 +1270,7 @@ ggplot(df_filter) +
 ## Quantification by Violin plot
 
 ggplot(df_filter, aes(x = class, y = cytx, 
-                           fill = class)) +
+                      fill = class)) +
   geom_violin(scale= "count", trim = FALSE, color = "black", alpha = 0.8) + 
   geom_boxplot(width = 0.1, outlier.shape = NA)+
   scale_fill_manual(values = c("grey", "firebrick")) +  
@@ -1273,11 +1286,13 @@ ggplot(df_filter, aes(x = class, y = cytx,
          plot.title = element_text(face = "bold", hjust = 0.5)
   )
 
+res <- wilcox.test(
+  cytx ~ class,
+  data = df_filter
+)
 
 ##########
 ## Spatial definition of Senescence-Sensitive Regions (SSR)
-
-UpdateSeuratObject(BRCL_skin_merged)
 
 coords <- GetTissueCoordinates(BRCL_skin_merged, image = image_names[i])
 
@@ -1291,8 +1306,7 @@ print(head(spatial_coords))
 
 ## Spatial enrichment of senescent spots and density estimation
 
-sen_density <- WhichCells(BRCL_skin_merged, expression = SenescenceStatus == "Senescent")
-spatial_coords$sen <- colnames(BRCL_skin_merged) %in% sen_density
+spatial_coords$sen <- colnames(BRCL_skin_merged) %in% sen_spots
 
 spatial_coords$sample <- BRCL_skin_merged$orig.ident
 
@@ -1302,6 +1316,60 @@ df_por_paciente <- split(df_sen, df_sen$sample)
 scale.col <- c("white", "grey90", "red")
 
 ## Density plot for representative patient
+
+ggplot(df_por_paciente[["002"]], aes(x = imagerow, y = imagecol)) +
+  stat_density_2d(
+    aes(fill = after_stat(level)),
+    geom = "density_2d_filled",
+    colour = "ivory",
+    linewidth = 0.3,
+    n = 300,
+    h = c(20, 20)
+  ) + 
+  geom_point(alpha = 0.1) +
+  scale_fill_gradientn(colours = scale.col) +
+  coord_fixed() + 
+  theme_bw() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+ggplot(df_por_paciente[["006"]], aes(x = imagerow, y = imagecol)) +
+  stat_density_2d(
+    aes(fill = after_stat(level)),
+    geom = "density_2d_filled",
+    colour = "ivory",
+    linewidth = 0.3,
+    n = 300,
+    h = c(20, 20)
+  ) + 
+  geom_point(alpha = 0.1) +
+  scale_fill_gradientn(colours = scale.col) +
+  coord_fixed() + 
+  theme_bw() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+ggplot(df_por_paciente[["009"]], aes(x = imagerow, y = imagecol)) +
+  stat_density_2d(
+    aes(fill = after_stat(level)),
+    geom = "density_2d_filled",
+    colour = "ivory",
+    linewidth = 0.3,
+    n = 300,
+    h = c(20, 20)
+  ) + 
+  geom_point(alpha = 0.1) +
+  scale_fill_gradientn(colours = scale.col) +
+  coord_fixed() + 
+  theme_bw() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
 
 ggplot(df_por_paciente[["010"]], aes(x = imagerow, y = imagecol)) +
   stat_density_2d(
@@ -1320,6 +1388,5 @@ ggplot(df_por_paciente[["010"]], aes(x = imagerow, y = imagecol)) +
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank()
   )
-
 
 
